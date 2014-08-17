@@ -3,13 +3,19 @@ package com.RbGroup.homemanager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.http.conn.util.InetAddressUtils;
 import org.java_websocket.server.WebSocketServer;
 
 import android.annotation.SuppressLint;
@@ -29,26 +35,69 @@ import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response.Status;
 
 public class MainActivity extends Activity {
-	
-	private static final int VENDOR_ID = 9025;
-	//Android
+
 	/************************************************************************************************************************/
-	
+	public String getLocalIpAddress() {
+		
+		String ipv4 = null;
+		
+	    try {
+	        for (Enumeration<NetworkInterface> en = NetworkInterface
+	                .getNetworkInterfaces(); en.hasMoreElements();) {
+	            NetworkInterface intf = en.nextElement();
+	            for (Enumeration<InetAddress> enumIpAddr = intf
+	                    .getInetAddresses(); enumIpAddr.hasMoreElements();) {
+	                InetAddress inetAddress = enumIpAddr.nextElement();
+	                System.out.println("ip1--:" + inetAddress);
+	                System.out.println("ip2--:" + inetAddress.getHostAddress());
+
+	      // for getting IPV4 format
+	      if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(ipv4 = inetAddress.getHostAddress())) {
+
+	                    String ip = inetAddress.getHostAddress().toString();
+	                    System.out.println("ip---::" + ip);
+	                   
+	                    return ipv4;
+	                }
+	            }
+	        }
+	    } catch (Exception ex) {
+	        Log.e("IP Address", ex.toString());
+	    }
+	    return null;
+	}
+
+	// Android
+	/************************************************************************************************************************/
+
+	private static final int VENDOR_ID = 9025;
 	private WebSocketServer webSocketServer;
 	private UsbSerialDriver driver = null;
 	private static final int BAUD = 9600;
 	private boolean connected = false;
 	private HttpServer webserver;
 	private boolean isRun = true;
-	
+
 	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		webSocketServer = new SocketServer(new InetSocketAddress(9999));
+		webSocketServer = new SocketServer(new InetSocketAddress(8080));
 		webSocketServer.start();
+
+		//Get IPv4
+		new Thread() {
+			public void run() {
+				try {
+					
+					System.out.println(InetAddress.getLocalHost().getAddress());
+				} catch (UnknownHostException e1) {
+					e1.printStackTrace();
+				}
+			};
+		}.start();
 		
 		UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
 		HashMap<String, UsbDevice> devices = usbManager.getDeviceList();
@@ -57,15 +106,15 @@ public class MainActivity extends Activity {
 				.hasNext();) {
 			String deviceName = iterator.next();
 			UsbDevice device = devices.get(deviceName);
-			
-			System.out.println("getVendorId : "+device.getVendorId());
-			
+
+			System.out.println("getVendorId : " + device.getVendorId());
+
 			if (device.getVendorId() == VENDOR_ID) {
 				driver = UsbSerialProber.acquire(usbManager, device);
 				break;
 			}
 		}
-		
+
 		if (driver != null) {
 			try {
 				driver.open();
@@ -88,7 +137,7 @@ public class MainActivity extends Activity {
 		}
 
 	}
-	
+
 	AsyncTask<Void, String, Void> receveTask = new AsyncTask<Void, String, Void>() {
 		byte[] read = new byte[128];
 		byte[] buff = new byte[128];
@@ -126,17 +175,17 @@ public class MainActivity extends Activity {
 			return null;
 		}
 	};
-		
-	//HttpServer
+
+	// HttpServer
 	/************************************************************************************************************************/
 	private class HttpServer extends NanoHTTPD {
 
-		private static final int PORT = 8888;
-		
+		private static final int PORT = 8081;
+
 		public HttpServer(int port) {
 			super(port);
 		}
-		
+
 		public HttpServer() throws IOException {
 			super(PORT);
 		}
@@ -161,10 +210,10 @@ public class MainActivity extends Activity {
 			String uri = session.getUri();
 			if (uri.endsWith(".do")) {
 				if (uri.equalsIgnoreCase("/command.do")) {
-					
-					//String key = session.getParms().get("key");
-					//String value = session.getParms().get("value");
-					
+
+					// String key = session.getParms().get("key");
+					// String value = session.getParms().get("value");
+
 					String result = "{'result':'OK'}";
 					return new NanoHTTPD.Response(Status.OK, MIME_HTML, result);
 				} else if (uri.equalsIgnoreCase("/monitoring.do")) {
@@ -208,27 +257,29 @@ public class MainActivity extends Activity {
 					e.printStackTrace();
 				}
 			}
-			
+
 			String mimeType = getMimeType(url);
-			
-			return new NanoHTTPD.Response(Status.OK, mimeType,	builder.toString());
+
+			return new NanoHTTPD.Response(Status.OK, mimeType,
+					builder.toString());
 
 		}
-		public String getMimeType(String url){
-			String mimeType = MIME_HTML; 
-			if(url.endsWith("js")){
+
+		public String getMimeType(String url) {
+			String mimeType = MIME_HTML;
+			if (url.endsWith("js")) {
 				mimeType = "text/javascript";
-			}else if(url.endsWith("css")){
+			} else if (url.endsWith("css")) {
 				mimeType = "text/css";
-			}else if(url.endsWith("png")){
+			} else if (url.endsWith("png")) {
 				mimeType = "image/png";
-			}else if(url.endsWith("ttf")){
+			} else if (url.endsWith("ttf")) {
 				mimeType = "application/x-font-ttf";
-			}else if(url.endsWith("otf")){
+			} else if (url.endsWith("otf")) {
 				mimeType = "application/x-font-opentype";
-			}else if(url.endsWith("eot")){
+			} else if (url.endsWith("eot")) {
 				mimeType = "application/vnd.ms-fontobject";
-			}else if(url.endsWith("woff")){
+			} else if (url.endsWith("woff")) {
 				mimeType = "application/font-woff";
 			}
 			return mimeType;
