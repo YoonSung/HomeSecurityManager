@@ -6,8 +6,6 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -26,6 +24,10 @@ import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
@@ -34,43 +36,46 @@ import com.hoho.android.usbserial.driver.UsbSerialProber;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response.Status;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnClickListener {
 
 	/************************************************************************************************************************/
 	public String getLocalIpAddress() {
-		
+
 		String ipv4 = null;
-		
-	    try {
-	        for (Enumeration<NetworkInterface> en = NetworkInterface
-	                .getNetworkInterfaces(); en.hasMoreElements();) {
-	            NetworkInterface intf = en.nextElement();
-	            for (Enumeration<InetAddress> enumIpAddr = intf
-	                    .getInetAddresses(); enumIpAddr.hasMoreElements();) {
-	                InetAddress inetAddress = enumIpAddr.nextElement();
-	                System.out.println("ip1--:" + inetAddress);
-	                System.out.println("ip2--:" + inetAddress.getHostAddress());
 
-	      // for getting IPV4 format
-	      if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(ipv4 = inetAddress.getHostAddress())) {
+		try {
+			for (Enumeration<NetworkInterface> en = NetworkInterface
+					.getNetworkInterfaces(); en.hasMoreElements();) {
+				NetworkInterface intf = en.nextElement();
+				for (Enumeration<InetAddress> enumIpAddr = intf
+						.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+					InetAddress inetAddress = enumIpAddr.nextElement();
+					System.out.println("ip1--:" + inetAddress);
+					System.out.println("ip2--:" + inetAddress.getHostAddress());
 
-	                    String ip = inetAddress.getHostAddress().toString();
-	                    System.out.println("ip---::" + ip);
-	                   
-	                    return ipv4;
-	                }
-	            }
-	        }
-	    } catch (Exception ex) {
-	        Log.e("IP Address", ex.toString());
-	    }
-	    return null;
+					// for getting IPV4 format
+					if (!inetAddress.isLoopbackAddress()
+							&& InetAddressUtils
+									.isIPv4Address(ipv4 = inetAddress
+											.getHostAddress())) {
+
+						String ip = inetAddress.getHostAddress().toString();
+						System.out.println("ip---::" + ip);
+
+						return ipv4;
+					}
+				}
+			}
+		} catch (Exception ex) {
+			Log.e("IP Address", ex.toString());
+		}
+		return null;
 	}
 
 	// Android
 	/************************************************************************************************************************/
 
-	private static final int VENDOR_ID = 9025;
+	private static final int VENDOR_ID = 0x04e8;
 	private WebSocketServer webSocketServer;
 	private UsbSerialDriver driver = null;
 	private static final int BAUD = 9600;
@@ -78,36 +83,56 @@ public class MainActivity extends Activity {
 	private HttpServer webserver;
 	private boolean isRun = true;
 
+	private Button btn;
+	
 	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+
+		/*
+		 * Test Code
+		 */
+
+		btn = (Button) findViewById(R.id.btn);
+		TextView txt = (TextView) findViewById(R.id.txt);
+
+		btn.setOnClickListener(this);
+
+		// Test Code End
+		StringBuilder sb = new StringBuilder();
+
 		webSocketServer = new SocketServer(new InetSocketAddress(8080));
 		webSocketServer.start();
 
-		//Get IPv4
+		// Get IPv4
 		new Thread() {
 			public void run() {
 				try {
-					
-					System.out.println(InetAddress.getLocalHost().getAddress());
-				} catch (UnknownHostException e1) {
+					System.out.println(getLocalIpAddress());
+				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
 			};
 		}.start();
-		
-		UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+
+
+		UsbManager usbManager = (UsbManager) getSystemService(USB_SERVICE);
+
 		HashMap<String, UsbDevice> devices = usbManager.getDeviceList();
 		Set<String> deviceNames = devices.keySet();
+
+		System.out.println(devices.size());
+		System.out.println(deviceNames.size());
+		
 		for (Iterator<String> iterator = deviceNames.iterator(); iterator
 				.hasNext();) {
 			String deviceName = iterator.next();
+			sb.append("deviceName = " + deviceName + "\n");
 			UsbDevice device = devices.get(deviceName);
 
-			System.out.println("getVendorId : " + device.getVendorId());
+			sb.append("getVendorId : " + device.getVendorId() + "\n");
 
 			if (device.getVendorId() == VENDOR_ID) {
 				driver = UsbSerialProber.acquire(usbManager, device);
@@ -127,8 +152,12 @@ public class MainActivity extends Activity {
 				Toast.makeText(this, "Driver 연결에 실패 했습니다.\n 다시 시도해 주세요.",
 						Toast.LENGTH_LONG).show();
 			}
-
 		}
+		
+		sb.append("driver : " + driver);
+		txt.setText(sb.toString());
+		System.out.println(sb.toString());
+		
 		try {
 			webserver = new HttpServer();
 			webserver.start();
@@ -283,6 +312,33 @@ public class MainActivity extends Activity {
 				mimeType = "application/font-woff";
 			}
 			return mimeType;
+		}
+	}
+
+	// Arduino
+	/************************************************************************************************************************/
+	private void sendCmd(String cmd) {
+		if (driver != null && connected) {
+			try {
+				Log.d("aurduino", cmd + " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				driver.write(cmd.getBytes(), 1000);
+				Toast.makeText(this, "입력!!", Toast.LENGTH_LONG).show();
+			} catch (IOException e) {
+				e.printStackTrace();
+				Toast.makeText(this, "동작에 오류가 있습니다.", Toast.LENGTH_LONG).show();
+			}
+		}
+	}
+
+	@Override
+	public void onClick(View v) {
+			
+		if (btn.getText().toString().equalsIgnoreCase("on")) {
+			sendCmd("0");
+			btn.setText("off");
+		} else {
+			sendCmd("1");
+			btn.setText("on");					
 		}
 	}
 }
