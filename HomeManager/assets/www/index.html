@@ -35,13 +35,13 @@
 			url : '/command.do',
 			data : {
 				key : key,
-				value : value
+				value : (document.querySelector(".bootstrap-switch-id-chkL1").className.indexOf("bootstrap-switch-off") == -1)
 			},
 			success : function() {
-				//$('#btnLight1').text("조명 Off");				
+				$('#btnLight1').text("조명 Off");				
 			},
 			error : function() {
-				alert('error');
+				//location.reload(true);
 			}
 		});
 
@@ -145,206 +145,13 @@
 			},
 			value : 50
 		});
-		$('#thermemeter3').jqxGauge({
-			width : 150,
-			height : 150,
-			min : -20,
-			max : 50,
-			ranges : [ {
-				startValue : -20,
-				endValue : 0,
-				style : {
-					fill : '#e2e2e2',
-					stroke : '#e2e2e2'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 0,
-				endValue : 10,
-				style : {
-					fill : '#00ccff',
-					stroke : '#00ccff'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 10,
-				endValue : 25,
-				style : {
-					fill : '#4cb848',
-					stroke : '#4cb848'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 25,
-				endValue : 35,
-				style : {
-					fill : '#fad00b',
-					stroke : '#fad00b'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 35,
-				endValue : 50,
-				style : {
-					fill : '#e53d37',
-					stroke : '#e53d37'
-				},
-				startDistance : 0,
-				endDistance : 0
-			} ],
-			cap : {
-				size : '5%',
-				style : {
-					fill : '#2e79bb',
-					stroke : '#2e79bb'
-				}
-			},
-			ticksMinor : {
-				interval : 5,
-				size : '5%'
-			},
-			ticksMajor : {
-				interval : 10,
-				size : '10%'
-			},
-			labels : {
-				position : 'outside',
-				interval : 10
-			},
-			pointer : {
-				style : {
-					fill : '#2e79bb'
-				},
-				width : 2
-			},
-			animationDuration : 400,
-			border : {
-				visible : false,
-			},
-			caption : {
-				value : '온도 : 25°C'
-			}
-		});
-		$('#thermemeter4').jqxGauge({
-			width : 150,
-			height : 150,
-			min : 0,
-			max : 100,
-			border : {
-				visible : false,
-			},
-			caption : {
-				value : '습도 : 68%'
-			},
-			value : 68
-		});
-		$('#thermemeter5').jqxGauge({
-			width : 150,
-			height : 150,
-			min : -20,
-			max : 50,
-			ranges : [ {
-				startValue : -20,
-				endValue : 0,
-				style : {
-					fill : '#e2e2e2',
-					stroke : '#e2e2e2'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 0,
-				endValue : 10,
-				style : {
-					fill : '#00ccff',
-					stroke : '#00ccff'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 10,
-				endValue : 25,
-				style : {
-					fill : '#4cb848',
-					stroke : '#4cb848'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 25,
-				endValue : 35,
-				style : {
-					fill : '#fad00b',
-					stroke : '#fad00b'
-				},
-				startDistance : 0,
-				endDistance : 0
-			}, {
-				startValue : 35,
-				endValue : 50,
-				style : {
-					fill : '#e53d37',
-					stroke : '#e53d37'
-				},
-				startDistance : 0,
-				endDistance : 0
-			} ],
-			cap : {
-				size : '5%',
-				style : {
-					fill : '#2e79bb',
-					stroke : '#2e79bb'
-				}
-			},
-			ticksMinor : {
-				interval : 5,
-				size : '5%'
-			},
-			ticksMajor : {
-				interval : 10,
-				size : '10%'
-			},
-			labels : {
-				position : 'outside',
-				interval : 10
-			},
-			pointer : {
-				style : {
-					fill : '#2e79bb'
-				},
-				width : 2
-			},
-			animationDuration : 400,
-			border : {
-				visible : false,
-			},
-			caption : {
-				value : '온도 : 25°C'
-			}
-		});
-		$('#thermemeter6').jqxGauge({
-			width : 150,
-			height : 150,
-			min : 0,
-			max : 100,
-			border : {
-				visible : false,
-			},
-			caption : {
-				value : '습도 : 45%'
-			},
-			value : 45
-
-		});
-
 	}
+	
 	$(function() {
 
 		initSwitch();
+		
+		/*
 		ws = new WebSocket('ws://' + location.hostname + ':9999');
 		ws.onopen = function() {
 			console.log('open..');
@@ -361,7 +168,8 @@
 		ws.onclose = function() {
 			console.log("close");
 		}
-
+		*/
+		
 		$('[type="checkbox"]').on('switchChange.bootstrapSwitch',
 				function(evt) {
 					if (this.checked) {
@@ -412,7 +220,7 @@
 				}
 			});
 		}, 1000);
-
+		
 	});
 </script>
 </head>
@@ -444,7 +252,7 @@
 							<div class="col-md-5 col-md-offset-1 col-lg-4">
 								<div class="form-group">
 									<label for="chkL1" class=" control-label">조명</label> <input
-										type="checkbox" id="chkL1" value="L1" />
+										type="checkbox" id="chkL1" value="light" />
 								</div>
 								<div class="form-group">
 									<label for="chkAc" class=" control-label">냉방</label> <input

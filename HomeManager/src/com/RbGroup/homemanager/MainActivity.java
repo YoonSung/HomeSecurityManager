@@ -84,7 +84,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	private boolean isRun = true;
 
 	private Button btn;
-	
+	private TextView txt; 
 	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -97,7 +97,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		 */
 
 		btn = (Button) findViewById(R.id.btn);
-		TextView txt = (TextView) findViewById(R.id.txt);
+		txt = (TextView) findViewById(R.id.txt);
 
 		btn.setOnClickListener(this);
 
@@ -238,12 +238,32 @@ public class MainActivity extends Activity implements OnClickListener {
 		public Response serve(IHTTPSession session) {
 			log(session);
 			String uri = session.getUri();
+			
+				System.out.println("Ajax !!");
 			if (uri.endsWith(".do")) {
+				
+				System.out.println("Ajax Request!!");
+				
 				if (uri.equalsIgnoreCase("/command.do")) {
 
-					// String key = session.getParms().get("key");
-					// String value = session.getParms().get("value");
+					//String key = session.getParms().get("key");
+					String value = session.getParms().get("value");
+					
+					//TestCode
+					//String testValue = "key : "+ key + "\nvalue : "+value;
+					//System.out.println(testValue);
 
+					//txt.setText("test!!");
+
+					System.out.println(Boolean.parseBoolean(value));
+					if (Boolean.parseBoolean(value) == true) {
+						System.out.println("0!");
+						sendCmd("0");
+					} else {
+						System.out.println("1!");
+						sendCmd("1");
+					}
+					
 					String result = "{'result':'OK'}";
 					return new NanoHTTPD.Response(Status.OK, MIME_HTML, result);
 				} else if (uri.equalsIgnoreCase("/monitoring.do")) {
