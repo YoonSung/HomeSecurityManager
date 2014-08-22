@@ -18,7 +18,6 @@ import org.java_websocket.server.WebSocketServer;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
@@ -75,7 +74,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	// Android
 	/************************************************************************************************************************/
 
-	private static final int VENDOR_ID = 0x04e8;
+	private static final int VENDOR_ID = 9025;
 	private WebSocketServer webSocketServer;
 	private UsbSerialDriver driver = null;
 	private static final int BAUD = 9600;
