@@ -5,15 +5,15 @@ import java.util.*;
 import android.content.Context;
 import android.util.Log;
 
-public class TeaServer extends NanoHTTPD
+public class StreamServer extends NanoHTTPD
 {
     static final String TAG="TEAONLY";
     
-    public TeaServer(int port, Context ctx) throws IOException {
+    public StreamServer(int port, Context ctx) throws IOException {
         super(port, ctx.getAssets());
     }
     
-    public TeaServer(int port, String wwwroot) throws IOException {
+    public StreamServer(int port, String wwwroot) throws IOException {
         super(port, new File(wwwroot).getAbsoluteFile() );
     }
 

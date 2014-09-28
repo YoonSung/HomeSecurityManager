@@ -1,7 +1,8 @@
 package com.RbGroup.homemanager;
 
-import android.util.Log;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 class VideoFrame extends OutputStream {
     private byte[] buffer;

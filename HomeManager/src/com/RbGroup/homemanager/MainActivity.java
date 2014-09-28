@@ -7,22 +7,31 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.http.conn.util.InetAddressUtils;
-
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -33,38 +42,45 @@ import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.google.ads.AdRequest;
-import com.google.ads.AdSize;
-import com.google.ads.AdView;
-
+@SuppressLint("NewApi")
 public class MainActivity extends Activity 
     implements View.OnTouchListener, CameraView.CameraReadyCallback, OverlayView.UpdateDoneCallback{
-    private static final String TAG = "TEAONLY";
-
-    private AdView adView;
+    private static final String TAG = "HOME_MANGER";
 
     boolean inProcessing = false;
     final int maxVideoNumber = 3;
     VideoFrame[] videoFrames = new VideoFrame[maxVideoNumber];
     byte[] preFrame = new byte[1024*1024*8];
     
-    TeaServer webServer = null;
+    StreamServer webServer = null;
     private CameraView cameraView_;
     private OverlayView overlayView_;
-    private Button btnExit;
+    private Button btnExit, btnToggle;
     private TextView tvMessage1;
     private TextView tvMessage2;
 
     private AudioRecord audioCapture = null;
     private StreamingLoop audioLoop = null;
+    
+    //Arduino Declation Start
+    /**************************************************************************************************/
+	private static final int VENDOR_ID = 9025;
+	private UsbSerialDriver driver = null;
+	private static final int BAUD = 9600;
+	private boolean connected = false;
+	private boolean isRun = true;
+	
+	StringBuilder sb = new StringBuilder();
+	
+	//Arduino Declation End
+	/**************************************************************************************************/
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         Window win = getWindow();
         win.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);    
@@ -72,14 +88,11 @@ public class MainActivity extends Activity
 
         setContentView(R.layout.main);
 
-        //setup adView
-        LinearLayout layout = (LinearLayout)findViewById(R.id.layout_setup);
-        adView = new AdView(this, AdSize.BANNER, "a1507f940fc****");
-        layout.addView(adView);
-        adView.loadAd(new AdRequest());
-
         btnExit = (Button)findViewById(R.id.btn_exit);
+        btnToggle = (Button)findViewById(R.id.btn_toggle);
         btnExit.setOnClickListener(exitAction);
+        btnToggle.setOnClickListener(testToggle);
+        
         tvMessage1 = (TextView)findViewById(R.id.tv_message1);
         tvMessage2 = (TextView)findViewById(R.id.tv_message2);
         
@@ -89,12 +102,60 @@ public class MainActivity extends Activity
 
         System.loadLibrary("mp3encoder");
         System.loadLibrary("natpmp");
-
+        
         initAudio();
         initCamera();
+        initArduino();
     }
     
-    @Override
+	private void initArduino() {
+    	//Arduino Setting Start
+        /**************************************************************************************************/
+        
+        UsbManager usbManager = (UsbManager) getSystemService(USB_SERVICE);
+
+		HashMap<String, UsbDevice> devices = usbManager.getDeviceList();
+		Set<String> deviceNames = devices.keySet();
+
+		System.out.println(devices.size());
+		System.out.println(deviceNames.size());
+		
+		for (Iterator<String> iterator = deviceNames.iterator(); iterator
+				.hasNext();) {
+			String deviceName = iterator.next();
+			sb.append("deviceName = " + deviceName + "\n");
+			UsbDevice device = devices.get(deviceName);
+
+			sb.append("getVendorId : " + device.getVendorId() + "\n");
+
+			if (device.getVendorId() == VENDOR_ID) {
+				Toast.makeText(this, "ㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂ",30000).show();
+				driver = UsbSerialProber.acquire(usbManager, device);
+				break;
+			}
+		}
+
+		if (driver != null) {
+			try {
+				driver.open();
+				driver.setBaudRate(BAUD);
+				driver.setReadBufferSize(64);
+				connected = true;
+				receveTask.execute();
+			} catch (IOException e) {
+				e.printStackTrace();
+				Toast.makeText(this, "Driver 연결에 실패 했습니다.\n 다시 시도해 주세요.",
+						Toast.LENGTH_LONG).show();
+			}
+		}
+		
+		sb.append("driver : " + driver);
+		
+		//Arduino Setting End
+        /**************************************************************************************************/		
+	}
+
+	@Override
     public void onCameraReady() {
         if ( initWebServer() ) {
             int wid = cameraView_.Width();
@@ -168,7 +229,7 @@ public class MainActivity extends Activity
         if ( audioLoop == null) {  
             Random rnd = new Random();
             String etag = Integer.toHexString( rnd.nextInt() );
-            audioLoop = new StreamingLoop("teaonly.droideye" + etag );
+            audioLoop = new StreamingLoop("HOME_MANGER" + etag );
         }
 
     }
@@ -206,7 +267,7 @@ public class MainActivity extends Activity
         String ipAddr = getLocalIpAddress();
         if ( ipAddr != null ) {
             try{
-                webServer = new TeaServer(8080, this); 
+                webServer = new StreamServer(8080, this); 
                 webServer.registerCGI("/cgi/query", doQuery);
                 webServer.registerCGI("/cgi/setup", doSetup);
                 webServer.registerCGI("/stream/live.jpg", doCapture);
@@ -236,6 +297,26 @@ public class MainActivity extends Activity
             onPause();
         }   
     };
+    
+    private OnClickListener testToggle = new OnClickListener() {
+    	
+		@Override
+		public void onClick(View v) {
+			
+			Toast.makeText(MainActivity.this, "Info :"+sb.toString(), Toast.LENGTH_SHORT).show();
+			
+			if (btnToggle.getText().toString().equalsIgnoreCase("off")) {
+				sendCmd("0");
+				btnToggle.setText("on");
+				//Toast.makeText(MainActivity.this, "OFF !!", Toast.LENGTH_SHORT).show();
+			} else {
+				sendCmd("1");
+				btnToggle.setText("off");
+				//Toast.makeText(MainActivity.this, "ON !!", Toast.LENGTH_SHORT).show();
+			}
+		}
+    	
+    };
    
     private PreviewCallback previewCb_ = new PreviewCallback() {
         public void onPreviewFrame(byte[] frame, Camera c) {
@@ -252,7 +333,7 @@ public class MainActivity extends Activity
         }
     };
     
-    private TeaServer.CommonGatewayInterface doQuery = new TeaServer.CommonGatewayInterface () {
+    private StreamServer.CommonGatewayInterface doQuery = new StreamServer.CommonGatewayInterface () {
         @Override
         public String run(Properties parms) {
             String ret = "";
@@ -272,12 +353,12 @@ public class MainActivity extends Activity
         }    
     }; 
 
-    private TeaServer.CommonGatewayInterface doSetup = new TeaServer.CommonGatewayInterface () {
+    private StreamServer.CommonGatewayInterface doSetup = new StreamServer.CommonGatewayInterface () {
         @Override
         public String run(Properties parms) {
             int wid = Integer.parseInt(parms.getProperty("wid")); 
             int hei = Integer.parseInt(parms.getProperty("hei"));
-            Log.d("TEAONLY", ">>>>>>>run in doSetup wid = " + wid + " hei=" + hei);
+            Log.d("HOME_MANGER", ">>>>>>>run in doSetup wid = " + wid + " hei=" + hei);
             cameraView_.StopPreview();
             cameraView_.setupCamera(wid, hei, previewCb_);
             cameraView_.StartPreview();
@@ -290,7 +371,7 @@ public class MainActivity extends Activity
         }    
     }; 
 
-    private TeaServer.CommonGatewayInterface doBroadcast = new TeaServer.CommonGatewayInterface() {
+    private StreamServer.CommonGatewayInterface doBroadcast = new StreamServer.CommonGatewayInterface() {
         @Override
         public String run(Properties parms) {
             return null;
@@ -321,7 +402,7 @@ public class MainActivity extends Activity
 
     };
 
-    private TeaServer.CommonGatewayInterface doCapture = new TeaServer.CommonGatewayInterface () {
+	private StreamServer.CommonGatewayInterface doCapture = new StreamServer.CommonGatewayInterface () {
         @Override
         public String run(Properties parms) {
            return null;
@@ -338,7 +419,7 @@ public class MainActivity extends Activity
             }
             // return 503 internal error
             if ( targetFrame == null) {
-                Log.d("TEAONLY", "No free videoFrame found!");
+                Log.d("HOME_MANGER", "No free videoFrame found!");
                 return null;
             }
 
@@ -438,5 +519,66 @@ public class MainActivity extends Activity
             }
         }    
     }
+    
+    
+    //Arduino Code Start
+  	/**************************************************************************************************/
+    
+    private void sendCmd(String cmd) {
+    	
+    	int result = 0;
+    	
+		if (driver != null && connected) {
+			try {
+				Log.d("Arduino Command : ", cmd);
+				driver.write(cmd.getBytes(), 1000);
+				Toast.makeText(this, "데이터 전달 : "+result, Toast.LENGTH_LONG).show();
+			} catch (IOException e) {
+				e.printStackTrace();
+				Toast.makeText(this, "데이터 전달실패", Toast.LENGTH_LONG).show();
+			}
+		}
+	}
+    
+    AsyncTask<Void, String, Void> receveTask = new AsyncTask<Void, String, Void>() {
+		byte[] read = new byte[128];
+		byte[] buff = new byte[128];
+		int buffCnt = 0;
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			try {
+				while (isRun) {
+					Arrays.fill(read, (byte) 0);
+					int readCnt = driver.read(read, 500);
+					// Log.d("arduino", "read("+readCnt + ")" + new String(read,
+					// 0, readCnt));
+					for (int i = 0; i < readCnt; i++) {
+
+						if (read[i] == 13) {
+							String msg = new String(buff, 0, buffCnt);
+							Arrays.fill(buff, (byte) 0);
+							buffCnt = 0;
+							Log.d("arduino", msg);
+							publishProgress(msg);
+						} else if (read[i] != 10 && read[i] != 13) {
+							if (buffCnt >= buff.length) {
+								Arrays.fill(buff, (byte) 0);
+							}
+							buff[buffCnt++] = read[i];
+						}
+					}
+					// Thread.sleep(50);
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return null;
+		}
+	};
+	
+	//Arduino Code End
+	/**************************************************************************************************/
 }    
 

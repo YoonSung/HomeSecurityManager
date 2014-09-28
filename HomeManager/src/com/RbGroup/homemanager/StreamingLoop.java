@@ -1,8 +1,5 @@
 package com.RbGroup.homemanager;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,7 +7,6 @@ import java.io.OutputStream;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
-import android.os.SystemClock;
 import android.util.Log;
 
 
