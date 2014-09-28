@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="libs/java_websocket.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/UsbSerialLibrary"/>
 	<classpathentry kind="lib" path="/Users/yoon/tool/android/sdk/platforms/android-16/android.jar"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
