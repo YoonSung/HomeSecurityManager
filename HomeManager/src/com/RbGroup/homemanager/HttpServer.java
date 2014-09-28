@@ -5,15 +5,15 @@ import java.util.*;
 import android.content.Context;
 import android.util.Log;
 
-public class StreamServer extends NanoHTTPD
+public class HttpServer extends NanoHTTPD
 {
-    static final String TAG="TEAONLY";
+    static final String TAG="HOME_MANAGER";
     
-    public StreamServer(int port, Context ctx) throws IOException {
+    public HttpServer(int port, Context ctx) throws IOException {
         super(port, ctx.getAssets());
     }
     
-    public StreamServer(int port, String wwwroot) throws IOException {
+    public HttpServer(int port, String wwwroot) throws IOException {
         super(port, new File(wwwroot).getAbsoluteFile() );
     }
 
@@ -21,7 +21,7 @@ public class StreamServer extends NanoHTTPD
     public Response serve( String uri, String method, Properties header, Properties parms, Properties files ) {
         Log.d(TAG, "httpd request >>" + method + " '" + uri + "' " + "   " + parms);
     
-        if ( uri.startsWith("/cgi/") ) {
+        if ( uri.startsWith("/cgi/") || uri.startsWith("/move") ) {
             return serveCGI(uri, method, header, parms, files);
         } else if ( uri.startsWith("/stream/") ) {
             return serveStream(uri, method, header, parms, files);

@@ -12,7 +12,7 @@ import android.util.Log;
 
 public class StreamingLoop
 {
-    private static String TAG = "TEAONLY";
+    private static String TAG = "HOME_MANAGER";
 	//Local data loopback
 	private LocalSocket receiver,sender;			
 	private LocalServerSocket lss;		

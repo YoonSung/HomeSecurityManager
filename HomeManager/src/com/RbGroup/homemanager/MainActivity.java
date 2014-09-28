@@ -55,7 +55,7 @@ public class MainActivity extends Activity
     VideoFrame[] videoFrames = new VideoFrame[maxVideoNumber];
     byte[] preFrame = new byte[1024*1024*8];
     
-    StreamServer webServer = null;
+    HttpServer webServer = null;
     private CameraView cameraView_;
     private OverlayView overlayView_;
     private Button btnExit, btnToggle;
@@ -72,8 +72,6 @@ public class MainActivity extends Activity
 	private static final int BAUD = 9600;
 	private boolean connected = false;
 	private boolean isRun = true;
-	
-	StringBuilder sb = new StringBuilder();
 	
 	//Arduino Declation End
 	/**************************************************************************************************/
@@ -117,19 +115,18 @@ public class MainActivity extends Activity
 		HashMap<String, UsbDevice> devices = usbManager.getDeviceList();
 		Set<String> deviceNames = devices.keySet();
 
-		System.out.println(devices.size());
-		System.out.println(deviceNames.size());
+		//System.out.println(devices.size());
+		//System.out.println(deviceNames.size());
 		
 		for (Iterator<String> iterator = deviceNames.iterator(); iterator
 				.hasNext();) {
 			String deviceName = iterator.next();
-			sb.append("deviceName = " + deviceName + "\n");
+			//sb.append("deviceName = " + deviceName + "\n");
 			UsbDevice device = devices.get(deviceName);
 
-			sb.append("getVendorId : " + device.getVendorId() + "\n");
+			//sb.append("getVendorId : " + device.getVendorId() + "\n");
 
 			if (device.getVendorId() == VENDOR_ID) {
-				Toast.makeText(this, "ㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂㅅㅂ",30000).show();
 				driver = UsbSerialProber.acquire(usbManager, device);
 				break;
 			}
@@ -149,7 +146,7 @@ public class MainActivity extends Activity
 			}
 		}
 		
-		sb.append("driver : " + driver);
+		//sb.append("driver : " + driver);
 		
 		//Arduino Setting End
         /**************************************************************************************************/		
@@ -267,11 +264,12 @@ public class MainActivity extends Activity
         String ipAddr = getLocalIpAddress();
         if ( ipAddr != null ) {
             try{
-                webServer = new StreamServer(8080, this); 
+                webServer = new HttpServer(8080, this); 
                 webServer.registerCGI("/cgi/query", doQuery);
                 webServer.registerCGI("/cgi/setup", doSetup);
                 webServer.registerCGI("/stream/live.jpg", doCapture);
                 webServer.registerCGI("/stream/live.mp3", doBroadcast);
+                webServer.registerCGI("/move", doMove);
             }catch (IOException e){
                 webServer = null;
             }
@@ -303,8 +301,6 @@ public class MainActivity extends Activity
 		@Override
 		public void onClick(View v) {
 			
-			Toast.makeText(MainActivity.this, "Info :"+sb.toString(), Toast.LENGTH_SHORT).show();
-			
 			if (btnToggle.getText().toString().equalsIgnoreCase("off")) {
 				sendCmd("0");
 				btnToggle.setText("on");
@@ -333,7 +329,7 @@ public class MainActivity extends Activity
         }
     };
     
-    private StreamServer.CommonGatewayInterface doQuery = new StreamServer.CommonGatewayInterface () {
+    private HttpServer.CommonGatewayInterface doQuery = new HttpServer.CommonGatewayInterface () {
         @Override
         public String run(Properties parms) {
             String ret = "";
@@ -353,7 +349,7 @@ public class MainActivity extends Activity
         }    
     }; 
 
-    private StreamServer.CommonGatewayInterface doSetup = new StreamServer.CommonGatewayInterface () {
+    private HttpServer.CommonGatewayInterface doSetup = new HttpServer.CommonGatewayInterface () {
         @Override
         public String run(Properties parms) {
             int wid = Integer.parseInt(parms.getProperty("wid")); 
@@ -371,7 +367,7 @@ public class MainActivity extends Activity
         }    
     }; 
 
-    private StreamServer.CommonGatewayInterface doBroadcast = new StreamServer.CommonGatewayInterface() {
+    private HttpServer.CommonGatewayInterface doBroadcast = new HttpServer.CommonGatewayInterface() {
         @Override
         public String run(Properties parms) {
             return null;
@@ -401,8 +397,41 @@ public class MainActivity extends Activity
         }
 
     };
+    String temp;
+    //working
+    private HttpServer.CommonGatewayInterface doMove = new HttpServer.CommonGatewayInterface() {
+        @Override
+        public String run(Properties parms) {
+//        	if (temp.equalsIgnoreCase("1"))
+//        		temp = "0";
+//        	else 
+//        		temp = "1";
+//        	
+        	String direction = parms.getProperty("direction");
+        	sendCmd(direction);
+        	//TestCode
+        	/*
+        	if (direction.equalsIgnoreCase("w"))
+        		sendCmd("1");
+        	else
+        		sendCmd("0");
+        	*/
+        	
+        	
+        	//Toast.makeText(MainActivity.this, "doMove!!!!!! Parameter is "+direction, 50000).show();
+            return direction;
+        }   
+        
+        
+        @Override 
+        public InputStream streaming(Properties parms) {
+           
+            return null;
+        }
 
-	private StreamServer.CommonGatewayInterface doCapture = new StreamServer.CommonGatewayInterface () {
+    };
+    
+	private HttpServer.CommonGatewayInterface doCapture = new HttpServer.CommonGatewayInterface () {
         @Override
         public String run(Properties parms) {
            return null;
@@ -532,10 +561,10 @@ public class MainActivity extends Activity
 			try {
 				Log.d("Arduino Command : ", cmd);
 				driver.write(cmd.getBytes(), 1000);
-				Toast.makeText(this, "데이터 전달 : "+result, Toast.LENGTH_LONG).show();
+				//Toast.makeText(this, "데이터 전달 : "+result, Toast.LENGTH_LONG).show();
 			} catch (IOException e) {
 				e.printStackTrace();
-				Toast.makeText(this, "데이터 전달실패", Toast.LENGTH_LONG).show();
+				//Toast.makeText(this, "데이터 전달실패", Toast.LENGTH_LONG).show();
 			}
 		}
 	}

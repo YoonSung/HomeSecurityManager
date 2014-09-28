@@ -1,7 +1,7 @@
 <!DOCTYPE html> 
 <html> 
 <head> 
-    <title>Remote Video</title> 
+    <title>Home Manager</title> 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"> 
     <link rel="stylesheet" href="res/jquery.mobile-1.1.1.min.css" />
@@ -47,8 +47,65 @@
             <span id="debug_msg">Connecting...</span>
         </div>
     </div><!-- /content -->  
+    <div id="keyboard">
+     <span id="87" class="key"><span class="text">W</span></span>
+     <br/>
+     <span id="65" class="key"><span class="text">A</span></span>
 
+     <span id="83" class="key"><span class="text">S</span></span>
+     <span id="68" class="key"><span class="text">D</span></span>
+     <span id="32" class="key space"><span class="text">SPACE</span></span>
+ </div>
 </div><!-- page -->
 
 </body>
+<script>
+
+document.addEventListener("keydown", keydown.bind(this));   
+document.addEventListener("keyup", keyup.bind(this));
+
+var eTest = document.getElementById("test");
+
+var nIndex = 4;
+var eInterval = null;
+var basicURL = $(location).attr('href');
+var eTarget = null;
+
+function keydown(e) {
+
+    eTarget = document.getElementById(e.keyCode);
+
+    if (eTarget === undefined || eTarget === null) {
+        return;
+    }
+    
+    ++nIndex;
+
+    if (nIndex % 5 === 0) {
+
+        $.ajax({
+            type: "GET",
+            url: basicURL + "move",
+            cache: false,
+            data: "direction=" + eTarget.innerText
+        });
+    }
+    eTarget.classList.add("keyDown");
+
+}
+
+function keyup(e) {
+
+    eTarget = document.getElementById(e.keyCode);
+
+    if (eTarget !== undefined && eTarget !== null) {
+        eTarget.classList.remove("keyDown");
+    }
+
+    if (eInterval !== undefined && eInterval !== null)
+        clearInterval(eInterval);
+    nIndex = 4;
+}
+
+</script>
 </html>
