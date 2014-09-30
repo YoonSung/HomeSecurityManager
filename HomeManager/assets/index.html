@@ -54,7 +54,9 @@
 
      <span id="83" class="key"><span class="text">S</span></span>
      <span id="68" class="key"><span class="text">D</span></span>
+     <!--
      <span id="32" class="key space"><span class="text">SPACE</span></span>
+     -->
  </div>
 </div><!-- page -->
 
@@ -66,7 +68,8 @@ document.addEventListener("keyup", keyup.bind(this));
 
 var eTest = document.getElementById("test");
 
-var nIndex = 4;
+var maxIndex = 2;
+var nIndex = maxIndex - 1;
 var eInterval = null;
 var basicURL = $(location).attr('href');
 var eTarget = null;
@@ -81,7 +84,7 @@ function keydown(e) {
     
     ++nIndex;
 
-    if (nIndex % 5 === 0) {
+    if (nIndex % maxIndex === 0) {
 
         $.ajax({
             type: "GET",
@@ -104,7 +107,7 @@ function keyup(e) {
 
     if (eInterval !== undefined && eInterval !== null)
         clearInterval(eInterval);
-    nIndex = 4;
+    nIndex = maxIndex -1;
 }
 
 </script>

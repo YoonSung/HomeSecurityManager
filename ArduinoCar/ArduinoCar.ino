@@ -75,9 +75,9 @@ void loop() {
       break;
     }
     
-    delay(300);
-      digitalWrite(MOTOR_A_BRAKE, HIGH);
-      digitalWrite(MOTOR_B_BRAKE, HIGH);
+    delay(150);
+    digitalWrite(MOTOR_A_BRAKE, HIGH);
+    digitalWrite(MOTOR_B_BRAKE, HIGH);
   }
 }
 
